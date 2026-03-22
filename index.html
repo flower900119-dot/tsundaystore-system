@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>門市管理系統</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .tab-content { display: none; }
+        .active { display: block; }
+        nav button { margin-right: 10px; }
+        header { padding: 1rem 0; }
+    </style>
+</head>
+<body class="container">
+    <header>
+        <h1>🏪 門市管理系統</h1>
+        <nav>
+            <button onclick="showTab('Lending')">布本借用</button>
+            <button onclick="showTab('Traffic')">來客回報</button>
+            <button onclick="showTab('Inventory')">耗材庫存</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="Lending" class="tab-content">
+            <h3>📖 布本借用/歸還</h3>
+            <form id="lendingForm">
+                <input type="text" name="id" placeholder="布本編號 / 品牌" required>
+                <select name="status">
+                    <option value="借出">借出</option>
+                    <option value="歸還">歸還</option>
+                </select>
+                <input type="text" name="user" placeholder="人員姓名" required>
+                <button type="submit">提交變動</button>
+            </form>
+        </section>
+
+        <section id="Traffic" class="tab-content">
+            <h3>👥 門市來客回報</h3>
+            <form id="trafficForm">
+                <div class="grid">
+                    <label>日期 <input type="date" name="date" required></label>
+                    <label>時間 <input type="time" name="time" required></label>
+                </div>
+                <label>客戶來源</label>
+                <select name="source">
+                    <option value="門市來客">門市來客</option>
+                    <option value="電話洽詢">電話洽詢</option>
+                    <option value="官網/粉專">官網/粉專</option>
+                    <option value="門市LINE@">門市LINE@</option>
+                    <option value="自洽客戶">自洽客戶</option>
+                    <option value="其他">其他</option>
+                </select>
+                <div class="grid">
+                    <input type="number" name="total" placeholder="當日總客數">
+                    <input type="number" name="consult" placeholder="當日諮詢數">
+                    <input type="number" name="deal" placeholder="當日成交數">
+                </div>
+                <input type="text" name="staff" placeholder="現場人員">
+                <textarea name="note" placeholder="備註"></textarea>
+                <button type="submit" class="secondary">提交統計</button>
+            </form>
+        </section>
+
+        <section id="Inventory" class="tab-content">
+            <h3>📦 耗材領取登記</h3>
+            <form id="inventoryForm">
+                <input type="text" name="name" placeholder="耗材名稱" required>
+                <input type="number" name="stock" placeholder="目前剩餘庫存量">
+                <div class="grid">
+                    <input type="text" name="user" placeholder="領取人">
+                    <input type="number" name="amount" placeholder="領取數量">
+                </div>
+                <button type="submit" class="contrast">更新庫存</button>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        // 【重要】請替換為你的 Google Apps Script Web App URL
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1enOXNCPcVrXvoLhgImOTRWpWWgjKwonMCAB5Mw9H6fvWHLJJ6F35ydM6EdsJo8lw/exec';
+
+        // 切換分頁邏輯
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+        showTab('Lending'); // 預設顯示第一頁
+
+        // 統一處理表單提交
+        async function handleFormSubmit(e, type) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            const btn = e.target.querySelector('button');
+            
+            btn.disabled = true;
+            btn.innerText = '同步中...';
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // 解決跨網域問題
+                    body: JSON.stringify({ type: type, data: data })
+                });
+                alert('資料已傳送！請至試算表確認。');
+                e.target.reset();
+            } catch (err) {
+                alert('發生錯誤：' + err);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '再次提交';
+            }
+        }
+
+        // 綁定三個表單事件
+        document.getElementById('lendingForm').onsubmit = (e) => handleFormSubmit(e, 'Lending');
+        document.getElementById('trafficForm').onsubmit = (e) => handleFormSubmit(e, 'Traffic');
+        document.getElementById('inventoryForm').onsubmit = (e) => handleFormSubmit(e, 'Inventory');
+    </script>
+</body>
+</html>
